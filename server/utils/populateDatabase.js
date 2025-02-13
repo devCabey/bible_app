@@ -1,40 +1,27 @@
 import fs from "fs";
 import path from "path";
-import dotenv from "dotenv";
-import sequelize from "../model/index.js";
+import { sequelize } from "../models/index.js";
 
-dotenv.config();
-
-const sqlFolderPath = path.resolve("./data");
-
-async function populateDatabase() {
+async function executeSQLFile(filePath) {
     try {
-        // Read all .sql files in the folder
-        const sqlFiles = fs.readdirSync(sqlFolderPath).filter((file) => file.endsWith(".sql"));
-
-        if (sqlFiles.length === 0) {
-            console.log("❌ No SQL files found in the folder.");
-            return;
-        }
-
-        console.log(`📂 Found ${sqlFiles.length} SQL files. Executing in order...`);
-
-        for (const file of sqlFiles) {
-            const filePath = path.join(sqlFolderPath, file);
-            const sql = fs.readFileSync(filePath, "utf-8");
-
-            console.log(`🚀 Executing: ${file}`);
-            await sequelize.query(sql, { raw: true });
-            console.log(`✅ Completed: ${file}`);
-        }
-
-        console.log("🎉 All SQL files executed successfully!");
+        const sql = fs.readFileSync(filePath, "utf8");
+        await sequelize.query(sql);
+        console.log(`Executed ${filePath}`);
     } catch (error) {
-        console.error("❌ Error executing SQL files:", error);
-    } finally {
-        await sequelize.close();
+        console.error(`Error executing ${filePath}:`, error);
     }
 }
 
-// Run the import
-populateDatabase();
+async function run() {
+    const sqlDir = path.join(__dirname, "sql_files"); // Folder with SQL files
+    const files = fs.readdirSync(sqlDir).filter((file) => file.endsWith(".sql"));
+
+    for (const file of files) {
+        await executeSQLFile(path.join(sqlDir, file));
+    }
+
+    console.log("Database population complete.");
+    process.exit();
+}
+
+run();

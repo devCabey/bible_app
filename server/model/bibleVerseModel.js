@@ -1,9 +1,13 @@
 import { DataTypes } from "sequelize";
-import sequelize from "../db.js";
+import sequelize from "./index.js";
 
 const BibleVerse = sequelize.define(
     "BibleVerse",
     {
+        book_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
         book: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -22,8 +26,8 @@ const BibleVerse = sequelize.define(
         },
     },
     {
-        tableName: "bible_verses",
-        timestamps: false, // Disable timestamps
+        tableName: "bible_verses", // This can be changed dynamically
+        timestamps: false,
     }
 );
 

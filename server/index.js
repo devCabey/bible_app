@@ -1,37 +1,32 @@
 import express from "express";
-import http from "http";
-import { Server as WebSocketServer } from "socket.io";
-
-import transcribeAudio from "./services/transcriber.js";
-import extractBibleReference from "./services/extractor.js";
-import sequelize from "./model/index.js";
+import sequelize from "./config/database";
+import { extractBibleReference } from "./utils/extractVerse";
 
 const app = express();
-const server = http.createServer(app);
-const io = new WebSocketServer(server, { cors: { origin: "*" } });
+app.use(express.json());
 
-io.on("connection", (socket) => {
-    console.log("Client connected");
+app.post("/get-verse", async (req, res) => {
+    const { text, translation = "akjv" } = req.body;
 
-    socket.on("audio-stream", async (audioBuffer) => {
-        try {
-            const transcription = await transcribeAudio(audioBuffer);
-            const bibleReference = await extractBibleReference(transcription);
+    try {
+        const reference = await extractBibleReference(text); // Use AI to extract Bible reference
 
-            if (bibleReference) {
-                const fullQuote = await fetchBibleQuote(bibleReference);
-                socket.emit("bible-quotation", { reference: bibleReference, text: fullQuote });
-            }
-        } catch (error) {
-            console.error("Error processing audio:", error);
-            socket.emit("error", "Failed to process audio");
+        if (!reference) {
+            return res.json({ message: "No Bible reference found." });
         }
-    });
 
-    socket.on("disconnect", () => console.log("Client disconnected"));
+        const { book, chapter, verse } = reference;
+        const [results] = await sequelize.query(`SELECT * FROM ${translation} WHERE book = ? AND chapter = ? AND verse = ?`, { replacements: [book, chapter, verse] });
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: "Verse not found." });
+        }
+
+        res.json(results[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 });
 
-server.listen(4000, async () => {
-    await sequelize.authenticate();
-    console.log("Server running on port 4000 & connected to DB");
-});
+app.listen(5000, () => console.log("Server running on port 5000"));
