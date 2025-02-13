@@ -1,27 +1,31 @@
+import sequelize from "../model/index.js";
 import fs from "fs";
 import path from "path";
-import { sequelize } from "../models/index.js";
+import { fileURLToPath } from "url";
 
-async function executeSQLFile(filePath) {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const clearDatabase = async () => {
+    await sequelize.query("SET FOREIGN_KEY_CHECKS = 0");
+    await sequelize.query("DROP TABLE IF EXISTS bible_verses");
+    await sequelize.query("SET FOREIGN_KEY_CHECKS = 1");
+};
+
+const populateDatabase = async () => {
     try {
-        const sql = fs.readFileSync(filePath, "utf8");
+        await clearDatabase();
+
+        const sqlPath = path.join(__dirname, "./data");
+        const sql = fs.readFileSync(sqlPath, "utf8");
         await sequelize.query(sql);
-        console.log(`Executed ${filePath}`);
+
+        console.log("✅ Database populated successfully!");
     } catch (error) {
-        console.error(`Error executing ${filePath}:`, error);
+        console.error("Database population error:", error);
+    } finally {
+        process.exit(0);
     }
-}
+};
 
-async function run() {
-    const sqlDir = path.join(__dirname, "sql_files"); // Folder with SQL files
-    const files = fs.readdirSync(sqlDir).filter((file) => file.endsWith(".sql"));
-
-    for (const file of files) {
-        await executeSQLFile(path.join(sqlDir, file));
-    }
-
-    console.log("Database population complete.");
-    process.exit();
-}
-
-run();
+sequelize.sync().then(populateDatabase);

@@ -26,7 +26,7 @@ const BibleVerse = sequelize.define(
         },
     },
     {
-        tableName: "bible_verses", // This can be changed dynamically
+        tableName: "bible_verses",
         timestamps: false,
     }
 );
