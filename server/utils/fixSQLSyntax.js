@@ -1,7 +1,10 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const sqlDirectory = path.join(__dirname, "data"); // Adjust to your directory path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const sqlDir = path.join(__dirname, "data"); // Adjust to your directory path
 
 function fixSQLSyntax(filePath) {
     let sqlContent = fs.readFileSync(filePath, "utf8");
@@ -25,9 +28,9 @@ function fixSQLSyntax(filePath) {
     console.log(`✅ Fixed SQL syntax in: ${filePath}`);
 }
 
-fs.readdirSync(sqlDirectory).forEach((file) => {
+fs.readdirSync(sqlDir).forEach((file) => {
     if (file.endsWith(".sql")) {
-        const filePath = path.join(sqlDirectory, file);
+        const filePath = path.join(sqlDir, file);
         fixSQLSyntax(filePath);
     }
 });

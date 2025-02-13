@@ -27,11 +27,17 @@ async function executeSQLFile(filePath) {
     }
 }
 
-const clearDatabase = async () => {
-    await sequelize.query("SET FOREIGN_KEY_CHECKS = 0");
-    await sequelize.query("DROP TABLE IF EXISTS bible_verses");
-    await sequelize.query("SET FOREIGN_KEY_CHECKS = 1");
-};
+async function resetDatabase() {
+    try {
+        console.log("⏳ Dropping and recreating all tables...");
+        await sequelize.sync({ force: true }); // Drops and recreates all tables
+        console.log("✅ Database reset successfully.");
+    } catch (error) {
+        console.error("❌ Error resetting database:", error);
+    } finally {
+        await sequelize.close();
+    }
+}
 
 const populateDatabase = async () => {
     try {
@@ -41,7 +47,7 @@ const populateDatabase = async () => {
             console.log("⚠️ No SQL files found!");
             return;
         }
-        await clearDatabase();
+        // await resetDatabase();
 
         for (const file of sqlFiles) {
             await executeSQLFile(path.join(sqlDir, file));
