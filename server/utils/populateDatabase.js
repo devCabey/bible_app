@@ -31,7 +31,6 @@ async function executeSQLFile(filePath) {
             })
             .filter((stmt) => stmt?.length > 0);
 
-
         for (const stmt of statements) {
             await executeQuery(stmt);
         }
