@@ -23,7 +23,6 @@ async function executeSQLFile(filePath) {
         const sql = fs.readFileSync(filePath, "utf-8");
 
         const parts = sql.split("\n\n");
-        console.log("part0", parts[0]);
 
         const statements = parts[1]
             .split("INSERT")
@@ -32,7 +31,6 @@ async function executeSQLFile(filePath) {
             })
             .filter((stmt) => stmt?.length > 0);
 
-        console.log("part1", statements);
         statements.unshift(parts[0]);
 
         for (const stmt of statements) {
@@ -57,9 +55,7 @@ async function populateDatabase() {
         }
 
         console.log("⏳ Populating database...");
-        const file = sqlFiles[0];
-
-        await executeSQLFile(path.join(sqlDir, file), transaction);
+        for (const file of sqlFiles) await executeSQLFile(path.join(sqlDir, file), transaction);
 
         await transaction.commit(); // Commit only after all queries succeed
         console.log("🎉 Database successfully populated!");
