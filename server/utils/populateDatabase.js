@@ -55,7 +55,7 @@ async function populateDatabase() {
 
         console.log("⏳ Populating database...");
         // for (const file of sqlFiles) await executeSQLFile(path.join(sqlDir, file), transaction);
-        const file = sqlFiles[1];
+        const file = sqlFiles[3];
         await executeSQLFile(path.join(sqlDir, file), transaction);
 
         await transaction.commit(); // Commit only after all queries succeed
