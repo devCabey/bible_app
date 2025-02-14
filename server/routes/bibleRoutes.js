@@ -7,6 +7,7 @@ const router = express.Router();
 router.post("/transcribe", async (req, res) => {
     try {
         const text = req.body.transcription;
+
         const reference = await extractBibleReference(text);
 
         if (reference === "None") {
@@ -14,7 +15,9 @@ router.post("/transcribe", async (req, res) => {
         }
 
         const [book, chapter, verse] = reference.split(" ");
-        const result = await BibleVerse.findOne({ where: { book, chapter, verse } });
+        const me = await BibleVerse.findAll();
+        console.log(me);
+        // const result = await BibleVerse.findOne({ where: { book, chapter, verse } });
 
         res.json(result ? result : { message: "Verse not found." });
     } catch (error) {
