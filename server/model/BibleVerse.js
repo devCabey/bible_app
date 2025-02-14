@@ -4,11 +4,6 @@ import sequelize from "./index.js";
 const BibleVerse = sequelize.define(
     "BibleVerse",
     {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true,
-        },
         version: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -47,6 +42,9 @@ const BibleVerse = sequelize.define(
     {
         tableName: "bible_verses", // Ensure this matches your actual table
         timestamps: false,
+        primaryKey: {
+            fields: ["version", "book_id", "chapter", "verse"],
+        },
     }
 );
 
