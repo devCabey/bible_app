@@ -23,31 +23,35 @@ async function executeSQLFile(filePath) {
         const sql = fs.readFileSync(filePath, "utf-8");
 
         const parts = sql.split("\n\n");
-        console.log(parts[0]);
-        // Split SQL into individual statements
+        console.log("part0", parts[0]);
+
         const statements = parts[1]
             .split("INSERT")
-            .map((stmt) => "INSERT " + stmt.trim())
-            .filter((stmt) => stmt.length > 0);
-        console.log(statements[2]);
+            .map((stmt, index) => {
+                if (index > 0) return "INSERT " + stmt.trim();
+            })
+            .filter((stmt) => stmt?.length > 0);
 
+        console.log("part1", statements);
         statements.unshift(parts[0]);
 
         for (const stmt of statements) {
             await executeQuery(stmt);
         }
+
         console.log(`✅ Successfully executed: ${filePath}`);
     } catch (error) {
-        await transaction.rollback(); // Rollback on failure
         console.error(`❌ Error executing ${filePath}:`, error);
     }
 }
 
 async function populateDatabase() {
+    const transaction = await sequelize.transaction(); // Start transaction
+
     try {
         const sqlFiles = fs.readdirSync(sqlDir).filter((file) => file.endsWith(".sql"));
 
-        if (sqlFiles.length === 0) {
+        if (sqlFiles?.length === 0) {
             console.log("⚠️ No SQL files found!");
             return;
         }
@@ -55,14 +59,12 @@ async function populateDatabase() {
         console.log("⏳ Populating database...");
         const file = sqlFiles[0];
 
-        // await resetDatabase(); // Uncomment to reset before populating
+        await executeSQLFile(path.join(sqlDir, file), transaction);
 
-        // for (const file of sqlFiles) {
-        await executeSQLFile(path.join(sqlDir, file));
-        // }
-
+        await transaction.commit(); // Commit only after all queries succeed
         console.log("🎉 Database successfully populated!");
     } catch (error) {
+        await transaction.rollback(); // Rollback on failure
         console.error("❌ Database population error:", error);
     } finally {
         await sequelize.close();
@@ -71,4 +73,3 @@ async function populateDatabase() {
 }
 
 populateDatabase();
-
