@@ -1,35 +1,53 @@
-import { useState } from "react";
-import { recordAudio } from "./utils/recordAudio";
-import axios from "axios";
+import { useState, useEffect, useRef } from "react";
 import { Mic, Pause } from "lucide-react";
 
 export default function App() {
     const [quote, setQuote] = useState<string>("");
-    const [isListening, setIsListening] = useState(true);
+    const [isListening, setIsListening] = useState(false);
+    const [ws, setWs] = useState<WebSocket | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioStreamRef = useRef<MediaStream | null>(null);
 
-    const handleRecord = async () => {
-        try {
-            setIsListening(true);
-            const recorder = await recordAudio();
-            recorder.start();
+    useEffect(() => {
+        // Connect WebSocket
+        const socket = new WebSocket("ws://localhost:5500"); // Change for production
 
-            setTimeout(async () => {
-                try {
-                    const transcription = await recorder.stop();
-                    const response = await axios.post<{ text?: string; message?: string }>("http://localhost:5000/api/transcribe", { transcription: (transcription as { text: string }).text });
-                    setQuote(response.data.text || response.data.message || "No quote found.");
-                } catch (error) {
-                    console.error("Transcription error:", error);
-                    setQuote("Failed to transcribe. Please try again.");
-                } finally {
-                    setIsListening(false);
-                }
-            }, 5000);
-        } catch (error) {
-            console.error("Recording error:", error);
-            setQuote("Failed to start recording.");
-            setIsListening(false);
-        }
+        socket.onopen = () => console.log("WebSocket connected");
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.verse) {
+                setQuote(data.verse);
+            } else {
+                setQuote(data.message || "No reference detected.");
+            }
+        };
+        socket.onclose = () => console.log("WebSocket disconnected");
+        setWs(socket);
+
+        return () => socket.close(); // Cleanup on unmount
+    }, []);
+
+    const startRecording = async () => {
+        setIsListening(true);
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStreamRef.current = stream;
+
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+        mediaRecorderRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (ws?.readyState === WebSocket.OPEN) {
+                ws.send(event.data);
+            }
+        };
+
+        mediaRecorder.start(250); // Send audio every 250ms
+    };
+
+    const stopRecording = () => {
+        setIsListening(false);
+        mediaRecorderRef.current?.stop();
+        audioStreamRef.current?.getTracks().forEach((track) => track.stop()); // Close the microphone
     };
 
     return (
@@ -37,20 +55,15 @@ export default function App() {
             <h1 className="text-lg font-semibold text-gray-600">VerseCatch</h1>
 
             <div className="mt-6 text-center">
-                <h2 className="text-xl font-bold">James 1:2-3 (AMPC)</h2>
-                <p className="mt-2 text-gray-700 max-w-lg">
-                    {quote} Consider it wholly joyful, my brethren, whenever you are enveloped in or encounter trials of any sort or fall into various temptations. Be assured and understand that the trial and proving of your faith bring out endurance and steadfastness and patience.
-                </p>
+                <h2 className="text-xl font-bold">Detected Verse:</h2>
+                <p className="mt-2 text-gray-700 max-w-lg">{quote}</p>
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                <button className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full" onClick={() => setIsListening(!isListening)}>
+                <button className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full" onClick={isListening ? stopRecording : startRecording}>
                     {isListening ? <Pause size={15} /> : <Mic size={15} />}
                 </button>
-                <p className="mt-4 text-gray-600 text-sm text-center w-48 ">Transcribing and detecting Bible quotations in real time.</p>
-                <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-sm py-2 px-7" onClick={() => handleRecord()} disabled={isListening}>
-                    <Mic size={16} className="mr-2" /> Continue Listening
-                </button>
+                <p className="mt-4 text-gray-600 text-sm text-center w-48">{isListening ? "Listening for Bible references..." : "Press to start listening."}</p>
             </div>
         </div>
     );
