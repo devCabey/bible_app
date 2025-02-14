@@ -1,8 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { Mic, Pause } from "lucide-react";
+import { AudioLines, CircleDot, Mic, MicOff } from "lucide-react";
 
 export default function App() {
-    const [quote, setQuote] = useState<string>("");
+    const [quote, setQuote] = useState<
+        | {
+              book: string;
+              chapter: number;
+              verse: number;
+              text: string;
+              version: string;
+          }
+        | undefined
+    >();
+
+    const [error, setError] = useState<string>("");
     const [isListening, setIsListening] = useState(false);
     const [ws, setWs] = useState<WebSocket | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -15,10 +26,10 @@ export default function App() {
         socket.onopen = () => console.log("WebSocket connected");
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.verse) {
-                setQuote(data.verse);
+            if (data.quotation) {
+                setQuote(data.quotation);
             } else {
-                setQuote(data.message || "No reference detected.");
+                setError(data.message || "No reference detected.");
             }
         };
         socket.onclose = () => console.log("WebSocket disconnected");
@@ -56,14 +67,32 @@ export default function App() {
 
             <div className="mt-6 text-center">
                 <h2 className="text-xl font-bold">Detected Verse:</h2>
-                <p className="mt-2 text-gray-700 max-w-lg">{quote}</p>
+                {error ? (
+                    <span className="text-red-500"> {error}</span>
+                ) : quote ? (
+                    <div className="mt-6 text-center">
+                        <h2 className="text-xl font-bold">
+                            {quote?.book} {quote?.chapter}:{quote?.verse} ({quote?.version?.toLocaleUpperCase()})
+                        </h2>
+                        <p className="mt-2 text-gray-700 max-w-lg">{quote?.text}</p>
+                    </div>
+                ) : (
+                    <span className="text-gray-500">No verse detected</span>
+                )}
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                <button className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full" onClick={isListening ? stopRecording : startRecording}>
-                    {isListening ? <Pause size={15} /> : <Mic size={15} />}
-                </button>
-                <p className="mt-4 text-gray-600 text-sm text-center w-48">{isListening ? "Listening for Bible references..." : "Press to start listening."}</p>
+                <span className="p-5 rounded-full bg-gray-100">{isListening ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
+                <p className="mt-4 text-gray-600 text-sm text-center w-48">{isListening ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
+                {isListening ? (
+                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500  rounded-full text-xs py-3 px-10" onClick={() => stopRecording()} disabled={!isListening}>
+                        <MicOff size={16} className="mr-2" /> Stop Listening
+                    </button>
+                ) : (
+                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={() => startRecording()} disabled={isListening}>
+                        <Mic size={16} className="mr-2" /> Start Listening
+                    </button>
+                )}
             </div>
         </div>
     );
