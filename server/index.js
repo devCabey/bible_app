@@ -11,6 +11,6 @@ app.use("/api", bibleRoutes);
 
 const PORT = process.env.PORT || 5500;
 
-sequelize.sync().then(() => {
+sequelize.sync({ alter: true }).then(() => {
     app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 });

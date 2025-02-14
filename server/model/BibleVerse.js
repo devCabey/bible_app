@@ -9,6 +9,10 @@ const BibleVerse = sequelize.define(
             autoIncrement: true,
             primaryKey: true,
         },
+        version: {
+            type: DataTypes.STRING,
+            allowNull: false,
+        },
         book_id: {
             type: DataTypes.INTEGER,
             allowNull: false,
@@ -29,18 +33,20 @@ const BibleVerse = sequelize.define(
             type: DataTypes.TEXT,
             allowNull: false,
         },
+        created_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
+            type: DataTypes.DATE,
+            allowNull: false,
+            defaultValue: DataTypes.NOW,
+        },
     },
     {
         tableName: "bible_verses", // Ensure this matches your actual table
-        indexes: [
-            {
-                unique: true,
-                fields: ["id"], // Ensures uniqueness per verse
-            },
-            {
-                fields: ["id"], // Speeds up queries filtering by book
-            },
-        ],
+        timestamps: false,
     }
 );
 

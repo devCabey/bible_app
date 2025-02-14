@@ -24,14 +24,13 @@ async function executeSQLFile(filePath) {
 
         const parts = sql.split("\n\n");
 
-        const statements = parts[1]
+        const statements = parts[0]
             .split("INSERT")
             .map((stmt, index) => {
                 if (index > 0) return "INSERT " + stmt.trim();
             })
             .filter((stmt) => stmt?.length > 0);
 
-        statements.unshift(parts[0]);
 
         for (const stmt of statements) {
             await executeQuery(stmt);
@@ -55,7 +54,9 @@ async function populateDatabase() {
         }
 
         console.log("⏳ Populating database...");
-        for (const file of sqlFiles) await executeSQLFile(path.join(sqlDir, file), transaction);
+        // for (const file of sqlFiles) await executeSQLFile(path.join(sqlDir, file), transaction);
+        const file = sqlFiles[0];
+        await executeSQLFile(path.join(sqlDir, file), transaction);
 
         await transaction.commit(); // Commit only after all queries succeed
         console.log("🎉 Database successfully populated!");
