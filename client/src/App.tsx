@@ -33,7 +33,7 @@ export default function App() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+        <div className="flex flex-col items-center justify-between md:justify-center min-h-screen bg-gray-100 px-6 pt-6 pb-0 md:pb-6">
             <h1 className="text-lg font-semibold text-gray-600">VerseCatch</h1>
 
             <div className="mt-6 text-center">
@@ -43,7 +43,7 @@ export default function App() {
                 </p>
             </div>
 
-            <div className="mt-8 bg-white shadow-md rounded-2xl p-6 flex flex-col items-center min-w-2xl">
+            <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
                 <button className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full" onClick={() => setIsListening(!isListening)}>
                     {isListening ? <Pause size={15} /> : <Mic size={15} />}
                 </button>
