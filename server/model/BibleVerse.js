@@ -35,10 +35,10 @@ const BibleVerse = sequelize.define(
         indexes: [
             {
                 unique: true,
-                fields: ["book_id", "chapter", "verse"], // Ensures uniqueness per verse
+                fields: ["id"], // Ensures uniqueness per verse
             },
             {
-                fields: ["book_id"], // Speeds up queries filtering by book
+                fields: ["id"], // Speeds up queries filtering by book
             },
         ],
     }

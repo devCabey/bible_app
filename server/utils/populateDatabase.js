@@ -71,15 +71,4 @@ async function populateDatabase() {
 }
 
 populateDatabase();
-// Start process
-// sequelize
-//     .authenticate()
-//     .then(() => {
-//         console.log("✅ Connected to database.");
-//         return sequelize.sync();
-//     })
-//     .then(populateDatabase)
-//     .catch((error) => {
-//         console.error("❌ Database connection error:", error);
-//         process.exit(1);
-//     });
+
