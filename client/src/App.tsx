@@ -97,10 +97,11 @@ export default function App() {
                         </h2>
                         <p className="mt-2 text-gray-700 max-w-lg">{quote?.text}</p>
                     </div>
+                ) : isLoading ? (
+                    <span className="text-gray-500">Loading...</span>
                 ) : (
                     <span className="text-gray-500">No verse detected</span>
                 )}
-                {isLoading && <span className="text-gray-500">Loading...</span>}
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
