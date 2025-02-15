@@ -15,6 +15,7 @@ export default function App() {
 
     const [error, setError] = useState<string>("");
     const [isListening, setIsListening] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [ws, setWs] = useState<WebSocket | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioStreamRef = useRef<MediaStream | null>(null);
@@ -26,39 +27,59 @@ export default function App() {
         socket.onopen = () => console.log("WebSocket connected");
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (data.quotation) {
-                setQuote(data.quotation);
+            if (data.verse) {
+                setQuote(data.verse);
+                setError("");
             } else {
                 setError(data.message || "No reference detected.");
             }
+            setIsLoading(false);
         };
-        socket.onclose = () => console.log("WebSocket disconnected");
+        socket.onclose = () => {
+            console.log("WebSocket disconnected");
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => setWs(new WebSocket("ws://localhost:5500")), 3000);
+        };
         setWs(socket);
 
-        return () => socket.close(); // Cleanup on unmount
+        return () => {
+            socket.close();
+            mediaRecorderRef.current?.stop();
+            audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+        };
     }, []);
 
     const startRecording = async () => {
         setIsListening(true);
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStreamRef.current = stream;
+        setIsLoading(true);
+        setError("");
 
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-        mediaRecorderRef.current = mediaRecorder;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioStreamRef.current = stream;
 
-        mediaRecorder.ondataavailable = (event) => {
-            if (ws?.readyState === WebSocket.OPEN) {
-                ws.send(event.data);
-            }
-        };
+            const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+            mediaRecorderRef.current = mediaRecorder;
 
-        mediaRecorder.start(250); // Send audio every 250ms
+            mediaRecorder.ondataavailable = (event) => {
+                if (ws?.readyState === WebSocket.OPEN) {
+                    ws.send(event.data);
+                }
+            };
+
+            mediaRecorder.start(250); // Send audio every 250ms
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            setError("Microphone access denied or not supported.");
+            setIsListening(false);
+            setIsLoading(false);
+        }
     };
 
     const stopRecording = () => {
         setIsListening(false);
         mediaRecorderRef.current?.stop();
-        audioStreamRef.current?.getTracks().forEach((track) => track.stop()); // Close the microphone
+        audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     };
 
     return (
@@ -79,17 +100,18 @@ export default function App() {
                 ) : (
                     <span className="text-gray-500">No verse detected</span>
                 )}
+                {isLoading && <span className="text-gray-500">Loading...</span>}
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
                 <span className="p-5 rounded-full bg-gray-100">{isListening ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
                 <p className="mt-4 text-gray-600 text-sm text-center w-48">{isListening ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
                 {isListening ? (
-                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500  rounded-full text-xs py-3 px-10" onClick={() => stopRecording()} disabled={!isListening}>
+                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!isListening}>
                         <MicOff size={16} className="mr-2" /> Stop Listening
                     </button>
                 ) : (
-                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={() => startRecording()} disabled={isListening}>
+                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={isListening}>
                         <Mic size={16} className="mr-2" /> Start Listening
                     </button>
                 )}
