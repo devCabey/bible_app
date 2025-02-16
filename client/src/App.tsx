@@ -37,8 +37,8 @@ export default function App() {
                 setQuote({
                     book: parsedData?.book, // Update based on backend response if available
                     chapter: parsedData?.chapter, // Update based on backend response if available
-                    verse: parsedData?.me, // Update based on backend response if available
-                    text: parsedData?.verse,
+                    verse: parsedData?.verse, // Update based on backend response if available
+                    text: parsedData?.text,
                     version: parsedData?.version, // Update based on backend response if available
                 });
             } else {
