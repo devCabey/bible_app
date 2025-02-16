@@ -1,85 +1,123 @@
 import { useState, useEffect, useRef } from "react";
 import { AudioLines, CircleDot, Mic, MicOff } from "lucide-react";
+import { io, Socket } from "socket.io-client"; // Import Socket.IO client with types
+
+interface Quote {
+    book: string;
+    chapter: number;
+    verse: number;
+    text: string;
+    version: string;
+}
 
 export default function App() {
-    const [quote, setQuote] = useState<
-        | {
-              book: string;
-              chapter: number;
-              verse: number;
-              text: string;
-              version: string;
-          }
-        | undefined
-    >();
-
+    const [quote, setQuote] = useState<Quote | undefined>(undefined);
     const [error, setError] = useState<string>("");
-    const [isListening, setIsListening] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [ws, setWs] = useState<WebSocket | null>(null);
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const audioStreamRef = useRef<MediaStream | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [recording, setRecording] = useState<boolean>(false);
+    const [socket, setSocket] = useState<Socket | null>(null);
+
+    const audioContext = useRef<AudioContext | null>(null);
+    const mediaStreamSource = useRef<MediaStreamAudioSourceNode | null>(null);
+    const scriptProcessorNode = useRef<ScriptProcessorNode | null>(null);
 
     useEffect(() => {
-        // Connect WebSocket
-        const socket = new WebSocket("ws://localhost:5500"); // Change for production
+        // Connect to the Socket.IO server
+        const newSocket: Socket = io("http://localhost:5500"); // Replace with your backend URL
+        setSocket(newSocket);
 
-        socket.onopen = () => console.log("WebSocket connected");
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.verse) {
-                setQuote(data.verse);
-                setError("");
+        // Handle messages from the server
+        newSocket.on("message", (data: string) => {
+            const parsedData = JSON.parse(data);
+            console.log("Received data:", parsedData);
+
+            if (parsedData.error) {
+                setError(parsedData.error);
+            } else if (parsedData) {
+                setQuote({
+                    book: parsedData?.book, // Update based on backend response if available
+                    chapter: parsedData?.chapter, // Update based on backend response if available
+                    verse: parsedData?.me, // Update based on backend response if available
+                    text: parsedData?.verse,
+                    version: parsedData?.version, // Update based on backend response if available
+                });
             } else {
-                setError(data.message || "No reference detected.");
+                setQuote(undefined); // Clear the quote if no verse is found
             }
-            setIsLoading(false);
-        };
-        socket.onclose = () => {
-            console.log("WebSocket disconnected");
-            // Attempt to reconnect after 3 seconds
-            setTimeout(() => setWs(new WebSocket("ws://localhost:5500")), 3000);
-        };
-        setWs(socket);
+        });
 
+        // Handle errors
+        newSocket.on("connect_error", (err: Error) => {
+            console.error("Socket.IO connection error:", err);
+            setError("Failed to connect to the server.");
+        });
+
+        // Cleanup on unmount
         return () => {
-            socket.close();
-            mediaRecorderRef.current?.stop();
-            audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+            newSocket.disconnect();
+            if (audioContext.current) {
+                audioContext.current.close();
+            }
         };
     }, []);
 
     const startRecording = async () => {
-        setIsListening(true);
-        setIsLoading(true);
         setError("");
-
+        setQuote(undefined);
+        setRecording(true);
+        setIsLoading(true);
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioStreamRef.current = stream;
+            // Get access to the microphone
+            const stream: MediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
 
-            const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-            mediaRecorderRef.current = mediaRecorder;
+            // Initialize AudioContext if it's not already initialized
+            if (!audioContext.current) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                audioContext.current = new ((window as any).AudioContext || (window as any).webkitAudioContext)();
+            } else {
+                mediaStreamSource.current = audioContext.current.createMediaStreamSource(stream);
+                scriptProcessorNode.current = audioContext.current.createScriptProcessor(4096, 1, 1);
+                scriptProcessorNode.current.onaudioprocess = (audioProcessingEvent: AudioProcessingEvent) => {
+                    const inputBuffer: AudioBuffer = audioProcessingEvent.inputBuffer;
+                    const inputData: Float32Array = inputBuffer.getChannelData(0);
 
-            mediaRecorder.ondataavailable = (event) => {
-                if (ws?.readyState === WebSocket.OPEN) {
-                    ws.send(event.data);
-                }
-            };
+                    // Convert the Float32Array to a Int16Array, which is expected by the backend
+                    const buffer: Int16Array = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        buffer[i] = Math.min(1, inputData[i]) * 0x7fff;
+                    }
 
-            mediaRecorder.start(250); // Send audio every 250ms
-        } catch (err) {
-            console.error("Error accessing microphone:", err);
-            setError("Microphone access denied or not supported.");
-            setIsListening(false);
-            setIsLoading(false);
+                    // Send the audio data to the server
+                    if (socket) {
+                        socket.emit("audioData", buffer);
+                    }
+                };
+
+                mediaStreamSource.current.connect(scriptProcessorNode.current);
+                scriptProcessorNode.current.connect(audioContext.current.destination); // Required for processing to occur
+            }
+        } catch (error) {
+            console.error("Error getting microphone access:", error);
+            setError("Error accessing microphone.");
+            setRecording(false);
         }
     };
 
     const stopRecording = () => {
-        setIsListening(false);
-        mediaRecorderRef.current?.stop();
-        audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+        setRecording(false);
+        setIsLoading(false);
+        if (scriptProcessorNode.current) {
+            scriptProcessorNode.current.disconnect();
+            scriptProcessorNode.current = null;
+        }
+        if (mediaStreamSource.current) {
+            mediaStreamSource.current.disconnect();
+            mediaStreamSource.current = null;
+        }
+
+        if (socket) {
+            socket.emit("endStream");
+        }
     };
 
     return (
@@ -104,14 +142,14 @@ export default function App() {
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                <span className="p-5 rounded-full bg-gray-100">{isListening ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
-                <p className="mt-4 text-gray-600 text-sm text-center w-48">{isListening ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
-                {isListening ? (
-                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!isListening}>
+                <span className="p-5 rounded-full bg-gray-100">{recording ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
+                <p className="mt-4 text-gray-600 text-sm text-center w-48">{recording ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
+                {recording ? (
+                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!recording}>
                         <MicOff size={16} className="mr-2" /> Stop Listening
                     </button>
                 ) : (
-                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={isListening}>
+                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={recording}>
                         <Mic size={16} className="mr-2" /> Start Listening
                     </button>
                 )}
