@@ -2,20 +2,26 @@
   FROM node:18-alpine AS builder
   WORKDIR /app
   
+  # Copy dependencies
   COPY package.json yarn.lock ./
-  
   RUN yarn install --frozen-lockfile
-
-  COPY . .
   
+  # Copy app files & build
+  COPY . .
   RUN yarn build
-
+  
+  # ---- Step 2: Serve with Nginx ----
   FROM nginx:alpine
   
+  # Copy built app to Nginx public folder
   COPY --from=builder /app/dist /usr/share/nginx/html
   
-  EXPOSE 5173
+  # Copy the Nginx configuration
+  COPY nginx.conf /etc/nginx/conf.d/default.conf
   
-  # Run Nginx
+  # Expose port 80 for Nginx
+  EXPOSE 80
+  
+  # Start Nginx
   CMD ["nginx", "-g", "daemon off;"]
   
