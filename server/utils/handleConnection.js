@@ -45,12 +45,10 @@ export const handleWebSocketConnection = (socket) => {
                         // Query the Bible Verse
                         const [book, chapter, verse] = reference.split(" ");
                         const result = await BibleVerse.findOne({ where: { book, chapter, verse } });
-                        console.log("Database query result:", result);
 
                         if (result) {
                             socket.send(
                                 JSON.stringify({
-                                    text: transcript,
                                     book: result.book,
                                     chapter: result.chapter,
                                     verse: result.verse,
