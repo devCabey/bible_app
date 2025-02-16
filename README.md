@@ -1,69 +1,59 @@
 # AI Bible Quotation App
 
 ## Project Structure
+
 The project consists of two main parts:
-- **Server** (Backend) - Handles API requests, database interactions, and AI processing.
-- **Client** (Frontend) - Provides the user interface for interaction.
+
+-   **Server** (Backend) - Handles API requests, database interactions, and AI processing.
+-   **Client** (Frontend) - Provides the user interface for interaction.
 
 ## Requirements
-- [Node.js](https://nodejs.org/)
-- [Yarn](https://yarnpkg.com/)
-- [Docker](https://www.docker.com/)
+
+-   [Docker](https://www.docker.com/)
+-   [Docker Compose](https://docs.docker.com/compose/)
 
 ## Setup and Running the Application
 
-### Server Setup
-1. Navigate to the server directory:
-   ```sh
-   cd server
-   ```
-2. Install dependencies:
-   ```sh
-   yarn install
-   ```
-3. Ensure Docker is running in the background.
-4. Start the database in Docker:
-   ```sh
-   yarn database:up
-   ```
-5. Start the server:
-   ```sh
-   yarn dev
-   ```
-   or
-   ```sh
-   yarn start
-   ```
-6. Populate the database with real data:
-   ```sh
-   yarn database:populate
-   ```
+### Running the Application with Docker Compose
 
-The server runs on **port 5500**.
+1. Ensure Docker is running in the background.
+2. Build and start the services (server, client, and database) using:
+    ```sh
+    docker-compose up --build -d
+    ```
+    This will:
+    - Build the required images
+    - Start the database, server, and client
+    - Run the application in detached mode (`-d` for background execution)
 
-### Client Setup
-1. Navigate to the client directory:
-   ```sh
-   cd client
-   ```
-2. Install dependencies:
-   ```sh
-   yarn install
-   ```
-3. Start the client:
-   ```sh
-   yarn dev
-   ```
+### Stopping the Application
 
-The client runs on **port 5173**.
+To stop all running services:
 
-### Database
-- The database is running on **port 5432** inside Docker.
+```sh
+docker-compose down
+```
 
-## Notes
-- Ensure that Docker is running before starting the database.
-- The server must be running before using the client.
-- If you face any issues, check logs and dependencies.
+### Logs and Debugging
+
+To check logs for the server or client, run:
+
+```sh
+docker-compose logs -f server
+```
+
+```sh
+docker-compose logs -f client
+```
+
+### Notes
+
+-   The **server** runs on **port 5500** inside Docker.
+-   The **client** runs on **port 3000**.
+-   The **database** runs on **port 5432** inside Docker.
+-   Ensure Docker is running before starting the application.
+-   If you face any issues, check logs and container statuses using `docker ps` and `docker-compose logs`.
 
 ## License
+
 This project is licensed under [MIT License](LICENSE).
