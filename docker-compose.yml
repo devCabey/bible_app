@@ -7,8 +7,18 @@ services:
         restart: always
         ports:
             - "5500:5500"
+        env_file:
+            - .env
         environment:
-            DATABASE_URL: "postgresql://bible_user:bible_password@postgres_db:5432/bible_db"
+            DB_HOST: "postgres_db"
+            DB_USER: "bible_user"
+            DB_PASSWORD: "bible_password"
+            DB_NAME: "bible_db"
+            DB_DIALECT: "postgres"
+            DB_PORT: "5432"
+            GOOGLE_APPLICATION_CREDENTIALS: /app/keys/google-key.json
+        volumes:
+            - ./server/keys:/app/keys
         depends_on:
             - postgres_db
 
