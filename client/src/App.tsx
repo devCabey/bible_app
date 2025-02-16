@@ -150,9 +150,15 @@ export default function App() {
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                <button className="p-5 rounded-full bg-gray-100" onClick={resumeRecording}>
-                    {recording ? <AudioLines size={20} /> : isPaused ? <Pause size={16} className="mr-2" /> : <CircleDot size={20} />}
-                </button>
+                {recording ? (
+                    <button className="p-5 rounded-full bg-gray-100 cursor-pointer hover:bg-gray-200" onClick={resumeRecording}>
+                        {!isPaused ? <AudioLines size={20} /> : <Pause size={16} className="" />}
+                    </button>
+                ) : (
+                    <button className="p-5 rounded-full bg-gray-100 cursor-not-allowed hover:bg-gray-200" disabled>
+                        <CircleDot size={20} />
+                    </button>
+                )}
                 <p className="mt-4 text-gray-600 text-sm text-center w-48">{recording ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
                 {recording ? (
                     <div className="flex gap-2 mt-4">
