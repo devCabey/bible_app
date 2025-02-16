@@ -156,11 +156,11 @@ export default function App() {
                         </button>
                     </div>
                 ) : recording && isPaused ? (
-                    <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={resumeRecording}>
+                    <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10  mt-4" onClick={resumeRecording}>
                         <Mic size={16} className="mr-2" /> Continue Listening
                     </button>
                 ) : (
-                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={recording}>
+                    <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10 " onClick={startRecording} disabled={recording}>
                         <Mic size={16} className="mr-2" /> Start Listening
                     </button>
                 )}
