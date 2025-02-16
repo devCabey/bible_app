@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { AudioLines, CircleDot, Mic, MicOff } from "lucide-react";
+import { AudioLines, CircleDot, Mic, MicOff, Pause } from "lucide-react";
 import { io, Socket } from "socket.io-client"; // Import Socket.IO client with types
 
 interface Quote {
@@ -15,6 +15,7 @@ export default function App() {
     const [error, setError] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [recording, setRecording] = useState<boolean>(false);
+    const [isPaused, setIsPaused] = useState<boolean>(false); // New state for pause
     const [socket, setSocket] = useState<Socket | null>(null);
 
     const audioContext = useRef<AudioContext | null>(null);
@@ -35,11 +36,11 @@ export default function App() {
                 setError(parsedData.error || parsedData.message);
             } else if (parsedData) {
                 setQuote({
-                    book: parsedData?.book, 
-                    chapter: parsedData?.chapter, 
-                    verse: parsedData?.verse, 
+                    book: parsedData?.book,
+                    chapter: parsedData?.chapter,
+                    verse: parsedData?.verse,
                     text: parsedData?.text,
-                    version: parsedData?.version, 
+                    version: parsedData?.version,
                 });
             } else {
                 setQuote(undefined); // Clear the quote if no verse is found
@@ -66,6 +67,7 @@ export default function App() {
         setQuote(undefined);
         setRecording(true);
         setIsLoading(true);
+        setIsPaused(false); // Reset pause state when starting
         try {
             // Get access to the microphone
             const stream: MediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
@@ -88,13 +90,14 @@ export default function App() {
                     }
 
                     // Send the audio data to the server
-                    if (socket) {
+                    if (socket && !isPaused) {
+                        // Only send data if not paused
                         socket.emit("audioData", buffer);
                     }
                 };
 
                 mediaStreamSource.current.connect(scriptProcessorNode.current);
-                scriptProcessorNode.current.connect(audioContext.current.destination); // Required for processing to occur
+                scriptProcessorNode.current.connect(audioContext.current.destination);
             }
         } catch (error) {
             console.error("Error getting microphone access:", error);
@@ -103,9 +106,18 @@ export default function App() {
         }
     };
 
+    const pauseRecording = () => {
+        setIsPaused(true); // Pause audio processing
+    };
+
+    const resumeRecording = () => {
+        setIsPaused(false); // Resume audio processing
+    };
+
     const stopRecording = () => {
         setRecording(false);
         setIsLoading(false);
+        setIsPaused(false); // Reset pause state when stopping
         if (scriptProcessorNode.current) {
             scriptProcessorNode.current.disconnect();
             scriptProcessorNode.current = null;
@@ -145,9 +157,20 @@ export default function App() {
                 <span className="p-5 rounded-full bg-gray-100">{recording ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
                 <p className="mt-4 text-gray-600 text-sm text-center w-48">{recording ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
                 {recording ? (
-                    <button className="mt-4 flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!recording}>
-                        <MicOff size={16} className="mr-2" /> Stop Listening
-                    </button>
+                    <div className="flex gap-2 mt-4">
+                        <button className="flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!recording}>
+                            <MicOff size={16} className="mr-2" /> Stop Listening
+                        </button>
+                        {isPaused ? (
+                            <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={resumeRecording}>
+                                <Mic size={16} className="mr-2" /> Resume
+                            </button>
+                        ) : (
+                            <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={pauseRecording}>
+                                <Pause size={16} className="mr-2" /> Pause
+                            </button>
+                        )}
+                    </div>
                 ) : (
                     <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={recording}>
                         <Mic size={16} className="mr-2" /> Start Listening
