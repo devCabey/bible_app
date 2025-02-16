@@ -31,8 +31,8 @@ export default function App() {
             const parsedData = JSON.parse(data);
             console.log("Received data:", parsedData);
 
-            if (parsedData.error) {
-                setError(parsedData.error);
+            if (parsedData.error || parsedData.message) {
+                setError(parsedData.error || parsedData.message);
             } else if (parsedData) {
                 setQuote({
                     book: parsedData?.book, // Update based on backend response if available
