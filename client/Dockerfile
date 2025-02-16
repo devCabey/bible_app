@@ -1,11 +1,21 @@
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+# ---- Step 1: Build Stage ----
+  FROM node:18-alpine AS builder
+  WORKDIR /app
+  
+  COPY package.json yarn.lock ./
+  
+  RUN yarn install --frozen-lockfile
 
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+  COPY . .
+  
+  RUN yarn build
+
+  FROM nginx:alpine
+  
+  COPY --from=builder /app/dist /usr/share/nginx/html
+  
+  EXPOSE 5173
+  
+  # Run Nginx
+  CMD ["nginx", "-g", "daemon off;"]
+  
