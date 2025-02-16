@@ -35,11 +35,11 @@ export default function App() {
                 setError(parsedData.error || parsedData.message);
             } else if (parsedData) {
                 setQuote({
-                    book: parsedData?.book, // Update based on backend response if available
-                    chapter: parsedData?.chapter, // Update based on backend response if available
-                    verse: parsedData?.verse, // Update based on backend response if available
+                    book: parsedData?.book, 
+                    chapter: parsedData?.chapter, 
+                    verse: parsedData?.verse, 
                     text: parsedData?.text,
-                    version: parsedData?.version, // Update based on backend response if available
+                    version: parsedData?.version, 
                 });
             } else {
                 setQuote(undefined); // Clear the quote if no verse is found
