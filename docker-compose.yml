@@ -14,7 +14,7 @@ services:
             DB_NAME: "bible_db"
             DB_DIALECT: "postgres"
             DB_PORT: "5432"
-            GOOGLE_APPLICATION_CREDENTIALS: /app/keys/google-key.json
+            GOOGLE_APPLICATION_CREDENTIALS: /app/keys/diesel-client-451019-e1-bddafd5b6b3f.json
         volumes:
             - ./server/keys:/app/keys
         depends_on:
