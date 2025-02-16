@@ -106,12 +106,8 @@ export default function App() {
         }
     };
 
-    const pauseRecording = () => {
-        setIsPaused(true); // Pause audio processing
-    };
-
     const resumeRecording = () => {
-        setIsPaused(false); // Resume audio processing
+        setIsPaused(!isPaused); // Resume audio processing
     };
 
     const stopRecording = () => {
@@ -154,22 +150,15 @@ export default function App() {
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                <span className="p-5 rounded-full bg-gray-100">{recording ? <AudioLines size={20} /> : <CircleDot size={20} />}</span>
+                <button className="p-5 rounded-full bg-gray-100" onClick={resumeRecording}>
+                    {recording ? <AudioLines size={20} /> : isPaused ? <Pause size={16} className="mr-2" /> : <CircleDot size={20} />}
+                </button>
                 <p className="mt-4 text-gray-600 text-sm text-center w-48">{recording ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
                 {recording ? (
                     <div className="flex gap-2 mt-4">
                         <button className="flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!recording}>
                             <MicOff size={16} className="mr-2" /> Stop Listening
                         </button>
-                        {isPaused ? (
-                            <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={resumeRecording}>
-                                <Mic size={16} className="mr-2" /> Resume
-                            </button>
-                        ) : (
-                            <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={pauseRecording}>
-                                <Pause size={16} className="mr-2" /> Pause
-                            </button>
-                        )}
                     </div>
                 ) : (
                     <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={recording}>
