@@ -1,6 +1,8 @@
 services:
     backend:
-        build: ./server
+        build:
+            context: ./server
+            dockerfile: Dockerfile
         container_name: server
         restart: always
         ports:
@@ -21,11 +23,13 @@ services:
             - postgres_db
 
     frontend:
-        build: ./client
+        build:
+            context: ./client
+            dockerfile: Dockerfile
         container_name: client
         restart: always
         ports:
-            - "3000:80" # Map port 80 in the container to port 3000 on the host
+            - "3000:80" # Map Nginx port 80 to localhost:3000
         depends_on:
             - backend
 

@@ -1,8 +1,0 @@
-[phases.setup]
-nixpkgs = ["nodejs_18"]
-
-[phases.build]
-cmds = ["cd client", "yarn install --frozen-lockfile", "yarn build"]
-
-[start]
-cmd = "cd client && yarn preview --host"
