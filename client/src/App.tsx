@@ -13,7 +13,6 @@ interface Quote {
 export default function App() {
     const [quote, setQuote] = useState<Quote | undefined>(undefined);
     const [error, setError] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [recording, setRecording] = useState<boolean>(false);
     const [isPaused, setIsPaused] = useState<boolean>(false); // New state for pause
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -42,6 +41,7 @@ export default function App() {
                     text: parsedData?.text,
                     version: parsedData?.version,
                 });
+                setIsPaused(true);
             } else {
                 setQuote(undefined); // Clear the quote if no verse is found
             }
@@ -66,7 +66,6 @@ export default function App() {
         setError("");
         setQuote(undefined);
         setRecording(true);
-        setIsLoading(true);
         setIsPaused(false); // Reset pause state when starting
         try {
             // Get access to the microphone
@@ -107,12 +106,11 @@ export default function App() {
     };
 
     const resumeRecording = () => {
-        setIsPaused(!isPaused); // Resume audio processing
+        setIsPaused(false); // Resume audio processing
     };
 
     const stopRecording = () => {
         setRecording(false);
-        setIsLoading(false);
         setIsPaused(false); // Reset pause state when stopping
         if (scriptProcessorNode.current) {
             scriptProcessorNode.current.disconnect();
@@ -146,26 +144,21 @@ export default function App() {
                 ) : (
                     <p className="text-gray-500">No verse detected</p>
                 )}
-                {isLoading && <p className="text-gray-500">Loading...</p>}
             </div>
 
             <div className="mt-8 bg-white shadow-md rounded-2xl p-7 flex flex-col items-center min-w-2xl">
-                {recording ? (
-                    <button className="p-5 rounded-full bg-gray-100 cursor-pointer hover:bg-gray-200" onClick={resumeRecording}>
-                        {!isPaused ? <AudioLines size={20} /> : <Pause size={16} className="" />}
-                    </button>
-                ) : (
-                    <button className="p-5 rounded-full bg-gray-100 cursor-not-allowed hover:bg-gray-200" disabled>
-                        <CircleDot size={20} />
-                    </button>
-                )}
-                <p className="mt-4 text-gray-600 text-sm text-center w-48">{recording ? "Listening for Bible references..." : "Transcribing and detecting Bible quotations in real time"}</p>
-                {recording ? (
+                <span className="p-5 rounded-full bg-gray-100">{recording && !isPaused ? <AudioLines size={20} /> : isPaused ? <Pause size={16} /> : <CircleDot size={20} />}</span>
+                <p className="mt-4 text-gray-600 text-sm text-center w-48">Transcribing and detecting Bible quotations in real time</p>
+                {recording && !isPaused ? (
                     <div className="flex gap-2 mt-4">
                         <button className="flex justify-center items-center bg-red-100 text-red-500 rounded-full text-xs py-3 px-10" onClick={stopRecording} disabled={!recording}>
                             <MicOff size={16} className="mr-2" /> Stop Listening
                         </button>
                     </div>
+                ) : recording && isPaused ? (
+                    <button className="flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={resumeRecording}>
+                        <Mic size={16} className="mr-2" /> Continue Listening
+                    </button>
                 ) : (
                     <button className="mt-4 flex justify-center items-center bg-black text-white rounded-full text-xs py-3 px-10" onClick={startRecording} disabled={recording}>
                         <Mic size={16} className="mr-2" /> Start Listening
