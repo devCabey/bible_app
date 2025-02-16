@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+    backend:
+        build: ./server
+        container_name: server
+        restart: always
+        ports:
+            - "5500:5500"
+        environment:
+            DATABASE_URL: "postgresql://bible_user:bible_password@postgres_db:5432/bible_db"
+        depends_on:
+            - postgres_db
+
+    frontend:
+        build: ./client
+        container_name: client
+        restart: always
+        ports:
+            - "5173:5173"
+        depends_on:
+            - backend
+
+    postgres_db:
+        image: postgres:latest
+        container_name: postgres_db
+        restart: always
+        environment:
+            POSTGRES_DB: bible_db
+            POSTGRES_USER: bible_user
+            POSTGRES_PASSWORD: bible_password
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+volumes:
+    postgres_data:
